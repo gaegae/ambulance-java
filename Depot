@@ -1,0 +1,64 @@
+package specialproblem;
+
+/**
+ * Hospital Depot
+ * @author Gege
+ */
+public class Depot {
+    public int id;
+    public Job schedule;
+
+    /**
+     * class Constructor
+     * 
+     * @param anId  Depot Vertex ID
+     */
+    Depot(int anId) {
+        id = anId;
+        schedule = new Job(5);
+    }
+        
+    /**
+     * initialize schedule
+     */
+    public void init() {
+        schedule = new Job(5);
+    }
+
+    /**
+     * gets depot ID
+     * 
+     * @return id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * gets best schedule time
+     * 
+     * @return start time of schedule
+     */
+    public double getTime() {
+        return schedule.getTime();
+    }
+
+    /**
+     * add job to schedule
+     * 
+     * @param time  travel time of ambulance
+     */
+    public void addSched(double time) {
+        schedule.addSched(time);
+    }
+
+    /**
+     * updates time in schedule
+     *  
+     * @param time passed from last call
+     */
+    public void updateTime (double time) {
+	schedule.updateTime(time);
+    }
+
+}
