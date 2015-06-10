@@ -1,0 +1,210 @@
+package specialproblem;
+
+import java.util.*;
+
+/** 
+ * Food Source Class used by ABC.java
+ * @author Gaezel Dorato
+ */
+public class FoodSource {
+	double distance;
+	double fitness;
+	double time;
+	double probability;
+	int trialCount;
+	int cycle;
+	ArrayList<Vertex> path;
+	Vertex current;
+        
+       /** 
+        * Class Constructor
+        * 
+        * @param start start location of path
+        */
+	FoodSource(Vertex start) {
+		distance = 0;
+		time = 0;
+		fitness = 0;
+		probability = 0;
+		trialCount = 0;
+		cycle = 0;
+		path = new ArrayList<>();
+                path.add(start);
+		current = start;
+	}
+       /** 
+        * set Probability value of food source
+        * 
+        * @param value probability double value
+        */
+	public void setProbability(double value) {
+		probability = value;
+	}
+        
+       /** 
+        * check if food source is successful
+        * 
+        * @return true if solution reaches depot and false if otherwise
+        */
+         public boolean isSuccessful() {
+            if(current.isDepot()) {
+                return true;
+            }
+            return false;
+        }
+
+       /** 
+        * adds vertex to path
+        * 
+        * @param v vertex added to path
+        */        
+	public void addPath(Vertex v) {
+		if(!v.isDepot()) {
+			distance += current.computeDistance(v);
+		} else {
+			time = distance/0.6867;
+                        fitness = 1/time;
+		}
+		path.add(v);
+		current = v;
+	}
+
+       /** 
+        * gets path of food source
+        * 
+        * @return path
+        */
+	public ArrayList<Vertex> getPath() {
+		return path;
+	}
+        
+       /** 
+        * gets probability of food source
+        * 
+        * @return probability
+        */
+	public double getProbability() {
+            return probability;
+	}
+        
+       /** 
+        * gets fitness of food source
+        * 
+        * @return fitness
+        */
+	public double getFitness() {
+		return fitness;
+	}
+
+       /** 
+        * gets distance of food source
+        * 
+        * @return probability
+        */
+	public double getDistance() {
+		return distance;
+	}
+        
+       /** 
+        * gets travel time
+        * 
+        * @return time distance/speed
+        */       
+        public double getDistanceTime() {
+            return distance/0.6867;
+        }
+        
+       /** 
+        * gets ambulance response time
+        * 
+        * @return time
+        */        
+	public double getTime() {
+		return time;
+	}
+
+       /** 
+        * adds time
+        * 
+        * @param add time added
+        */        
+	public void addTime(double add) {
+		time += add;
+	}
+        
+       /** 
+        * gets current vertex
+        * 
+        * @return current
+        */
+	public Vertex getCurrent() {
+		return current;
+	}
+
+       /** 
+        * adds count to trial counter
+        */        
+	public void addCount() {
+		trialCount++;
+	}
+        
+       /** 
+        * gets trial count
+        * 
+        * @return trial count
+        */
+	public int getTrialCount() {
+		return trialCount;
+	}
+        
+       /** 
+        * checks if Vertex is visited
+        * 
+        * @param vCmp   vertex to be checked
+        * @return true if vCmp is visited and false if otherwise
+        */
+	public boolean isVisited(Vertex vCmp) {
+		for(Vertex v:path) {
+			if(v.getId() == vCmp.getId()) {
+				return true;
+			}
+		}
+		return false;
+	}
+        
+       /** 
+        * gets Path String
+        * 
+        * @return String path
+        */
+	public String getPathStr() {
+            String s = "";
+            for(Vertex v:path) {
+                s += "-" + v.getId();
+            }
+            return s;
+	}
+        
+       /** 
+        * check if food Source is different
+        * 
+        * @param f  food source to be compared
+        * @return true if different and false if otherwise
+        */        
+        public boolean isDifferent(FoodSource f) {
+            ArrayList<Vertex> a = f.getPath();
+             ArrayList<Vertex> b = this.getPath();
+            
+            if(a.size() != b.size()) {
+                return true;
+            } else {
+                for(int i = 0; i < a.size(); i++) {
+                    if(a.get(i) != b.get(i)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+}
