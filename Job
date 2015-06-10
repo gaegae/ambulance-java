@@ -1,0 +1,77 @@
+package specialproblem;
+
+/**
+ * keeps track of ambulance schedule
+ * @author Gaezel Dorato
+ */
+public class Job {
+	double [] vehicles;
+	int bestSched;
+
+	Job(int qnty) {
+		vehicles = new double[qnty];
+		bestSched = 0;
+	}
+
+    /**
+     * gets best time schedule
+     * 
+     * @return bestSched time
+     */
+    public int getBestSched() {
+	return bestSched;
+    }
+
+    /**
+     * adds job time to a vehicle
+     * 
+     * @param time how long job is done
+     */
+    public void addSched(double time) {
+	vehicles[bestSched] = time;
+    }
+
+    /**
+     * gets time of best vehicle to schedule job
+     * @return time of vehicle
+     */
+    public double getTime() {
+		updateBest();
+		return vehicles[bestSched];
+	}
+
+    /**
+     * updates which vehicle is free for job
+     */
+    public void updateBest() {
+		double min = vehicles[0];
+		for(int i = 0; i < vehicles.length; i++) {
+			if(vehicles[i] == 0) {
+				bestSched = i;
+				return;
+			}else if(vehicles[i] < 0) {
+				vehicles[i] = 0;
+				bestSched = i;
+				return;
+			}else if(vehicles[i] < min) {
+				min = vehicles[i];
+				bestSched = i;
+			}
+		}
+	}
+
+    /**
+     * updates time in vehicle schedules
+     * 
+     * @param timePassed time passed since last call
+     */
+    public void updateTime(double timePassed) {
+		if(timePassed == 0) {
+			return;
+		}
+		for(int i = 0; i < vehicles.length; i++) {
+			vehicles[i] -= timePassed;
+		}
+		updateBest();
+	}
+}
