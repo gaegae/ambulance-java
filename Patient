@@ -1,0 +1,82 @@
+package specialproblem;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+/**
+ * Patient to be transfered by ambulance
+ * @author Gaezel Dorato
+ */
+public class Patient {
+	private final int id;
+	private boolean isSaved;
+	private final long startTime;
+	private final long endTime;
+
+	Patient(int anId, long aStart, long anEnd) {
+            id = anId;
+            isSaved = false;
+            startTime = aStart;
+            endTime = anEnd;
+	}
+
+    /**
+     * get Customer Vertex ID
+     * 
+     * @return id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * checks if patient is serviced within time
+     * 
+     * @return true if patient is saved and false if otherwise
+     */
+    public boolean isSaved() {
+	return isSaved;
+    }
+
+    /**
+     * checks if patient is saved after ambulance transfer outputs time window and saved status
+     * 
+     * @param timeDone  time ambulance was done transporting patient
+     * @return String time windows and success status
+     */
+    public String checkIn(double timeDone) {
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        String start = sdf.format(new Date(startTime));
+        String end = sdf.format(new Date(endTime));
+        
+        double time = Math.round((endTime - startTime)/60000);
+        double value = timeDone;
+        if(timeDone == -1) {
+            isSaved = false;
+        }
+        if(value <= time) {
+                isSaved = true;
+        } else {
+                isSaved = false;
+        }
+        return "\nTime window: " + "[" + start + " , " + end + "]" + "\nSaved: " + isSaved ;
+    }
+
+    /**
+     * gets start time of time windows
+     * 
+     * @return startTime
+     */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /**
+     * gets end time of time windows
+     * 
+     * @return endTime 
+     */
+    public long getEndTime() {
+	return endTime;
+    }
+}
