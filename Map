@@ -1,0 +1,280 @@
+package specialproblem;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+
+/**
+ * Map CLass holds set of vertices, depots and patients
+ * 
+ * @author Gaezel Dorato
+ */
+public class Map {
+  private final ArrayList<Vertex> vertices;
+  private final ArrayList<Depot> depots;
+  private final ArrayList<Patient> patients;
+
+  Map() throws IOException {
+    vertices = new ArrayList<>();
+    depots = new ArrayList<>();
+    patients = new ArrayList<>();
+  }
+
+    /**
+     * gets list of depots
+     * 
+     * @return depots
+     */
+    public ArrayList<Depot> getDepots() {
+	return depots;
+  }
+  
+    /**
+     * initialize all depots
+     */
+    public void initDepots() {
+        depots.stream().forEach((d) -> {
+            d.init();
+      });
+  }
+
+    /**
+     * gets list of vertices
+     * 
+     * @return vertices
+     */
+    public ArrayList<Vertex> getVertices() {
+	return vertices;
+  }
+
+    /**
+     * gets list of patients
+     * 
+     * @return patients
+     */
+    public ArrayList<Patient> getPatients() {
+    return patients;
+  }
+
+    /**
+     * get patient using index number
+     * 
+     * @param index     index of patient
+     * @return patient
+     */
+    public Patient getPatient(int index) {
+	  return patients.get(index);
+  }
+
+    /**
+     * gets depot using Vertex ID
+     * 
+     * @param id    vertex ID
+     * @return depot if existing and null if otherwise
+     */
+    public Depot getDepot(int id) {
+      for (Depot depot : depots) {
+          if (depot.getId() == id) {
+              return depot;
+          }
+      }
+	  return null;
+  }
+
+    /**
+     * gets vertex using vertex ID
+     * 
+     * @param id    vertexID
+     * @return vertex 
+     */
+    public Vertex getVertex(int id) {
+      return vertices.get(id-1);
+  }
+
+    /**
+     * checks patient if saved
+     * 
+     * @param index     patient index
+     * @param endTime   time patient arrived at the hospital
+     */
+    public void checkPatient(int index,double endTime) {
+	patients.get(index).checkIn(endTime);
+  }
+  
+    /**
+     * clear patient list
+     */
+    public void clearPatient() {
+      patients.clear();
+  }
+    /**
+     * sets random vertex into patient
+     *
+     * @return String patient
+     */   
+    public String setSinglePatient() {
+        patients.clear();
+        Random r = new Random();
+        int id = r.nextInt(vertices.size())+1;
+        long startTime = System.currentTimeMillis() + (long)((Math.random() * 60000)); 
+        long endTime = startTime + (long) (((r.nextDouble() * 60000) * 12) + 480000);
+        while(getVertex(id).isDepot()) {
+                id = r.nextInt(vertices.size())+1;
+        }   
+                    
+	addPatient(id,startTime,endTime);
+        String str = "\n Patient: " + id + " called. Demand time: " + Math.round((endTime-startTime)/60000) + "mins" ;
+        return str;
+    }
+
+    /**
+     * sets n number of random vertices into patients with time windows
+     * 
+     * @param num   number of patients
+     * @return String patient
+     */
+    public String setPatients(int num) {
+        patients.clear();
+        String str = "";
+        
+	for(int i = 0; i < num; i++) {
+            Random r = new Random();
+            int id = r.nextInt(vertices.size())+1;
+            long startTime = System.currentTimeMillis() + (long)(Math.random() * 60000); 
+            long endTime = startTime + (long) ((r.nextDouble() * 60000) * 12) + 480000;
+            while(getVertex(id).isDepot()) {
+                    id = r.nextInt(vertices.size())+1;
+            }   
+                    
+		addPatient(id,startTime,endTime);
+	}
+	sortPatients();
+        for(Patient c:patients) {
+            
+            str = "\n Patient: " + c.getId() + " called. Demand time: " + (c.getEndTime()-c.getStartTime()) ;
+        }
+        return str;
+  }
+
+    /**
+     * sorts patients by start time and demand time
+     */
+    public void sortPatients() {
+        Collections.sort(patients,new TimeComparator());
+
+         for(int i = 0; i < patients.size(); i++) {
+              for(int j = i+1; j < patients.size(); j++) { 
+                  if(patients.get(i).getStartTime() == patients.get(j).getStartTime()) {
+                      double demand1 = patients.get(i).getEndTime()- patients.get(i).getStartTime();
+                      double demand2 = patients.get(j).getEndTime()- patients.get(j).getStartTime();
+                      if(demand1 > demand2) {
+                          Collections.swap(patients, i, j);
+                      }
+
+                  }
+              }
+          }     
+    }
+
+    /**
+     * adds new patient
+     * 
+     * @param id            patient vertexID      
+     * @param startTime     start time of time windows  
+     * @param endTime       end time of time windows
+     * @return  String      output 
+     */
+    public String addPatient(int id, long startTime, long endTime) {
+  	Patient customer = new Patient(id, startTime, endTime);
+ 	patients.add(customer);
+        return "\n Patient: " + id + " called." ;
+  }
+
+    /**
+     * adds vertices to map
+     * 
+     * @param file  file holding vertices data
+     * @throws IOException exception
+     */
+    public void addVertices(String file)throws IOException {
+      try {
+      String line;
+      BufferedReader br = new BufferedReader(new FileReader(file));
+      while ((line = br.readLine()) != null) {
+        String[] info = line.split(",");
+        int id = Integer.parseInt(info[0]);
+        double lat = Double.parseDouble(info[1]);
+        double lng = Double.parseDouble(info[2]);
+        Vertex v = new Vertex(id,lat,lng);
+      	vertices.add(v);
+      }
+    } catch (IOException e) {
+    }
+  }
+
+    /**
+     * add Vertex to map
+     * 
+     * @param v     Vertex
+     */
+    public void addVertex(Vertex v) {
+      vertices.add(v);
+    }
+
+    /**
+     * adds depot using vertex ID
+     * 
+     * @param vertexId depot vertexID to be added
+     */
+    public void addDepot(int vertexId) {
+      getVertex(vertexId).isDepot(true);
+      Depot dep = new Depot(vertexId);
+      depots.add(dep);
+  }
+
+    /**
+     * adds edges to map
+     * 
+     * @param file  file holding edges data
+     * @throws IOException
+     */
+    public void addEdges(String file) throws IOException {
+    try {
+      String line = new String();
+      BufferedReader br = new BufferedReader(new FileReader(file));
+      while ((line = br.readLine()) != null) {
+        String[] info = line.split(":");
+        String[] routes = info[1].split(",");
+        int id = Integer.parseInt(info[0]);
+        for(String r:routes) {
+          getVertex(id).addEdge(this,Integer.parseInt(r));
+        }
+      }
+    } catch (IOException e) {
+         e.printStackTrace();
+    }
+  }
+
+    /**
+     * resets pheromone
+     * 
+     * @param ids   vertices to be reset
+     */
+    public void resetPheromone(ArrayList<Integer> ids) {
+      ids.stream().forEach((i) -> {
+          vertices.get(i-1).resetPheromone();
+      });
+  }
+
+    /**
+     * update time of each depot schedules
+     * 
+     * @param time  time passed from last call
+     */
+    public void updateTime(double time) {
+      depots.stream().forEach((d) -> {
+          d.updateTime(time);
+      });
+  }
+}
