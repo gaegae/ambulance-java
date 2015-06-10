@@ -1,0 +1,126 @@
+package specialproblem;
+
+import java.util.*;
+
+/**
+ * Solution Class used in TS.java
+ * 
+ * @author Gaezel Dorato
+ */
+public class Solution {
+	private float distance;
+	private ArrayList<Vertex> visited;
+	private Vertex current;
+
+	Solution(Vertex start) {
+            distance = 0;
+            visited = new ArrayList<>();
+            visited.add(start);
+            current = start;
+	}
+
+    /**
+     * gets visited vertices
+     * 
+     * @return visited
+     */
+    public ArrayList<Vertex> getVisited() {
+		return visited;
+	}
+
+    /**
+     * gets distance of solution
+     * 
+     * @return distance
+     */
+    public float getDistance() {
+		return distance;
+	}
+
+    /**
+     * gets travel time
+     * 
+     * @return time distance/speed
+     */
+    public double getTime() {
+		return (distance/0.6867);
+	}
+
+    /**
+     * gets current vertex
+     * 
+     * @return current
+     */
+    public Vertex getCurrent() {
+		return current;
+	}
+
+    /**
+     * adds Vertex to visited list
+     * 
+     * @param v Vertex to be added
+     */
+    public void addVisited(Vertex v) {
+        if(!v.isDepot()) {
+                distance += current.computeDistance(v);
+        }
+        visited.add(v);
+        current = v;
+    }
+
+    /**
+     * removes last visited vertex
+     */
+    public void remove() {
+        if(visited.size() == 1) {
+                return;
+        }
+        if(!current.isDepot()) {
+            Vertex v = visited.get(visited.size()-2);
+            distance -= current.computeDistance(v);
+        }
+        visited.remove(visited.size()-1);
+        current = visited.get(visited.size()-1);
+    }
+
+    /**
+     * checks if solution is successful
+     * 
+     * @return true if current is depot and false if otherwise
+     */
+    public boolean isSuccessful() {
+             if(current.isDepot()) {
+                return true;
+            }
+            return false;
+	}
+
+    /**
+     * checks if vertex is already visited
+     * 
+     * @param vCmp Vertex to check
+     * @return true if already visited and false if otherwise
+     */
+    public boolean isVisited(Vertex vCmp) {
+        for(Vertex v:visited) {
+                if(v.getId() == vCmp.getId()) {
+                        //System.out.println("is visited");
+                        return true;
+                }
+        }
+        return false;
+    }
+
+    /**
+     * gets visited String
+     * 
+     * @return visited String
+     */
+    public String getVisitedStr() {
+		String s = "";
+		for(Vertex v: visited) {
+			s += "-" + v.getId();
+		}
+		return s;
+	}
+}
