@@ -1,0 +1,219 @@
+package specialproblem;
+
+import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.JSValue;
+import com.teamdev.jxbrowser.chromium.dom.By;
+import com.teamdev.jxbrowser.chromium.dom.DOMDocument;
+import com.teamdev.jxbrowser.chromium.dom.DOMElement;
+import com.teamdev.jxbrowser.chromium.events.FinishLoadingEvent;
+import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+
+/**
+ * Map Output 
+ * 
+ * @author Gaezel Dorato
+ */
+public class MapUI {
+   public static String best;
+   Browser browser = new Browser();
+   BrowserView browserView = new BrowserView(browser);
+   private static int zoomValue = 4;
+   
+    /**
+     * opens map.html
+     * 
+     * @param vertices  map vertices
+     */
+    public void openMap(ArrayList<Vertex> vertices) {
+     
+       //placeIcon(vertices);
+       JFrame frame = new JFrame("map.html");
+       //frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+       //frame.add(toolBar, BorderLayout.SOUTH);
+       frame.add(browserView, BorderLayout.CENTER);
+       frame.setSize(600, 500);
+       frame.setLocationRelativeTo(null);
+       frame.setVisible(true);
+        
+       browser.loadURL("C:\\Users\\Gege\\Documents\\NetBeansProjects\\SpecialProblem\\src\\specialproblem\\map.html");
+       
+   }
+
+    /**
+     * javascript for placing icons
+     * 
+     * @param vertices ArrayList to set icons
+     */
+    public void placeIcon(ArrayList<Vertex> vertices) {
+       for(Vertex v:vertices) {
+            browser.executeJavaScript(
+                "var myLatlng = " + v.getCoordinates() + ";\n" +
+                "var mark = new google.maps.Marker({\n" +
+                "    position: myLatlng,\n" +
+                "    map: map,\n" +
+                "    icon: 'patient.png' \n" +
+                "});\n"
+            );                
+                    
+      }
+   }
+   
+    /**
+     * gets location
+     * 
+     * @return coordinates of location
+     */
+    public String getLocation() {
+       String s = "";  
+       JSValue coor = browser.executeJavaScriptAndReturnValue("document.title");
+                if (coor.isString()) {
+                    s =coor.getString();
+                }
+       return s;
+   }
+
+    /**
+     * loads map.html, shows route for each algorithm and best route
+     * 
+     * @param patients  list of patient coordinates
+     * @param depots    list of depot coordinates
+     * @param routes    list of route coordinates
+     * @param best      best algorithm that generated route
+     */
+    public void runMap(ArrayList<String> patients, ArrayList<String> depots, ArrayList<String> routes,int best) {
+       JButton bestMarkerButton = new JButton("Best");
+       bestMarkerButton.addActionListener(new ActionListener() {
+           public void actionPerformed(ActionEvent e) {
+               browser.executeJavaScript(
+                "  var mapOptions = {\n" +
+                "    zoom: 17,\n" +
+                "    center:" + depots.get(best) + "\n" +
+                "  };\n" +
+                "  var map = new google.maps.Map(document.getElementById('map-canvas'),\n" +
+                "  mapOptions);\n" );
+                drawLine(browser,patients.get(0),depots.get(best),routes.get(best),best);
+           }
+       });           
+
+       JButton setMarkerButton = new JButton("Set Route");
+       setMarkerButton.addActionListener(new ActionListener() {
+           public void actionPerformed(ActionEvent e) { 
+               browser.executeJavaScript(
+                "  var mapOptions = {\n" +
+                "    zoom: 17,\n" +
+                "    center:" + patients.get(0) + "\n" +
+                "  };\n" +
+                "  var map = new google.maps.Map(document.getElementById('map-canvas'),\n" +
+                "      mapOptions);\n" );
+                if(depots.size() <= 4) {
+                    for(int i= 0; i < depots.size(); i++) {
+                        drawLine(browser,patients.get(0),depots.get(i),routes.get(i),i);
+                    }
+                } else {
+                    for(int i = 0; i < patients.size(); i++) {
+                        drawLine(browser,patients.get(i),depots.get(i),routes.get(i),best);
+                    }
+                }
+           }
+       });
+
+       JPanel toolBar = new JPanel();
+       toolBar.add(bestMarkerButton);
+       toolBar.add(setMarkerButton);
+
+       JFrame frame = new JFrame("map.html");
+       //frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+       frame.add(toolBar, BorderLayout.SOUTH);
+       frame.add(browserView, BorderLayout.CENTER);
+       frame.setSize(600, 500);
+       frame.setLocationRelativeTo(null);
+       frame.setVisible(true);
+
+       browser.loadURL("C:\\Users\\Gege\\Documents\\NetBeansProjects\\SpecialProblem\\src\\specialproblem\\map.html");
+   }
+   
+    /**
+     * shows poly line for best route
+     * 
+     * @param browser   browser to open
+     * @param patient   patient coordinates
+     * @param depot     depot coordinates
+     * @param route     route coordinates
+     * @param algo      best algorithm 
+     */
+    public void setBestLine(Browser browser, String patient, String depot, String route, int algo) {
+       drawLine(browser, patient,depot,route,algo);  
+   }
+     
+    /**
+     * javascript to draw polyline
+     * 
+     * @param browser   browser to open
+     * @param patient   patient coordinates
+     * @param depot     depot coordinates
+     * @param route     route coordinates
+     * @param algo      best algorithm 
+     */
+    public void drawLine(Browser browser, String patient, String depot, String route, int algo) {
+        String color = "";
+        String hospitalImg = "";
+        String weight = "";
+       
+       if(algo == 0) {
+            color = "#FFCC00";
+            hospitalImg = "'abcHospital.png'";
+            weight = "5";
+            
+        } else if(algo == 1) {
+            color = "#559971";
+            hospitalImg = "'tsHospital.png'";
+            weight = "4";
+            
+        } else if(algo == 2) {
+            color = "#e01818";
+            hospitalImg = "'acoHospital.png'";
+            weight = "3";
+        } else if(algo == 3) {
+            color = "#3e597c";
+            hospitalImg = "'gaHospital.png'";
+            weight = "2";
+         
+        }
+       
+       browser.executeJavaScript(
+            "var myLatlng = " + patient + ";\n" +
+            "var marker = new google.maps.Marker({\n" +
+            "    position: myLatlng,\n" +
+            "    map: map,\n" +
+            "    icon: 'patient.png' \n" +
+            "});\n" +
+                    
+
+            "var myLatlng = " + depot + ";\n" +
+            "var marker = new google.maps.Marker({\n" +
+            "    position: myLatlng,\n" +
+            "    map: map,\n" +
+            "    icon: " + hospitalImg + "\n" +
+            "});\n" +
+                    
+            "var routeCoordinates = [ \n" + route + "];\n" +            
+
+            "var routePath = new google.maps.Polyline({\n"+
+            "path: routeCoordinates," +
+            "geodesic: true,\n" +
+            "strokeColor:" + "'" + color + "'" + ",\n" +
+            "strokeOpacity: 1.0,\n" +
+            "strokeWeight:" + weight + " \n"+
+            "});\n" +
+            "\nroutePath.setMap(map);");    
+   }
+}
+
