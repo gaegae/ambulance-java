@@ -1,0 +1,88 @@
+package specialproblem;
+import java.util.*;
+
+/**
+ * Bee Class for ABC.java 
+ * @author Gaezel Dorato
+ */
+public class Bee {
+    FoodSource path;
+    Vertex current;
+
+   /**
+    * class constructor
+    * 
+    * @param start origin start of bee path
+    */
+    Bee(Vertex start) {
+        path = new FoodSource(start);
+        current = start;
+    }
+    
+   /**
+    * gets Food SOurce
+    * 
+    * @return FoodSource food source solution
+    */
+    public FoodSource getFood() {
+        return path;
+    }
+
+   /**
+    * gets Arraylist vertices food source path
+    * 
+    * @return ArrayList path
+    */
+    public ArrayList<Vertex> getPath() {
+        return path.getPath();
+    }
+
+   /**
+    * adds time
+    * 
+    * @param time time to add
+    */
+    public void addTime(double time) {
+        path.addTime(time);
+    }
+
+   /**
+    * gets current vertex
+    * 
+    * @return current Vertex 
+    */   
+    public Vertex getCurrent() {
+        return current;
+    }
+
+   /**
+    * add visited Vertex
+    * 
+    * @param v Vertex
+    */
+    public void addVisited(Vertex v) {
+        path.addPath(v);
+        current = v;
+    }
+    
+   /**
+    * checks if Vertex is already visited
+    * 
+    * @param vCmp vertex to be checked
+    * @return boolean true if visited false if otherwise
+    */
+    public boolean isVisited(Vertex vCmp) {
+        return path.isVisited(vCmp);
+    }
+
+   /**
+    * sets this Bee
+    * 
+    * @param bee Bee agent
+    */
+    public void setBee(Bee bee) {
+        this.path = bee.getFood();
+        this.current = bee.getCurrent();
+    }
+}
+
