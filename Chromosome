@@ -1,0 +1,181 @@
+package specialproblem;
+import java.util.*;
+
+/**
+ * Chromosome Class used for GA.java
+ * @author Gaezel Dorato
+ */
+
+public class Chromosome {
+	double distance;
+	double fitness;
+	double response;
+	ArrayList<Vertex> visited;
+	Vertex current;
+ 
+       /** 
+        * Class constructor
+        * 
+        * @param start first visited
+        */
+	Chromosome(Vertex start) {
+		distance = 0;
+		fitness = 0;
+		response = 0;
+		visited = new ArrayList<Vertex>();
+		visited.add(start);
+		current = start;
+	}
+        /**
+         * checks if chromosome is successful in finding solution
+         * 
+         * @return true if Chromosome reaches depot and false if otherwise
+         */
+	public boolean isSuccessful() {
+            if(current.isDepot()) {
+                return true;
+            }
+            return false;
+	}
+        
+        /**
+         * gets visited vertices
+         * 
+         * @return ArrayList of vertices
+         */
+	public ArrayList<Vertex> getVisited() {
+		return visited;
+	}
+        
+        /**
+         * gets total distance of visited vertices
+         * 
+         * @return distance 
+         */
+	public double getDistance() {
+            return distance;
+	}
+        
+        /**
+         * get response time (distance/speed)
+         * 
+         * @return response
+         */
+	public double getTime() {
+            return response;
+	}
+
+        /**
+         * adds time to response time
+         * @param aTime time added
+         */
+	public void addTime(double aTime) {
+		response += aTime;
+	}
+
+        /**
+         * gets fitness of Chromosome
+         * 
+         * @return fitness
+         */        
+	public double getFitness() {
+		return fitness;
+	}
+        
+        /**
+         * gets current Vertex
+         * 
+         * @return current
+         */
+	public Vertex getCurrent() {
+		return current;
+	}
+        
+        /**
+         * add Vertex to visited list
+         * 
+         * @param v Vertex
+         */
+	public void addVisited(Vertex v) {
+		if(!v.isDepot()) {
+			distance += current.computeDistance(v);
+			response = distance/0.6867;
+		} else {
+                    fitness = 1/response;
+                }
+		visited.add(v);
+		current = v;
+	}
+        
+        /**
+         * removes last vertex visited
+         */        
+        public void remove() {
+		if(visited.size() == 1) {
+			return;
+		}
+		if(!current.isDepot()) {
+		    Vertex v = visited.get(visited.size()-2);
+		    distance -= current.computeDistance(v);
+		}
+		visited.remove(visited.size()-1);
+		current = visited.get(visited.size()-1);
+
+	}
+        
+        /**
+         * sets fitness
+         * 
+         * @param f double value
+         */       
+	public void setFitness(double f) {
+		fitness = f;
+	}
+        
+        /**
+         * checks if vertex is already visited
+         * 
+         * @param vCmp Vertex to be compared
+         * @return true if already visited and false otherwise
+         */
+	public boolean isVisited(Vertex vCmp) {
+		for(Vertex v:visited) {
+			if(v.getId() == vCmp.getId()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+        /**
+         * print visited locations
+         * 
+         * @return visited String
+         */
+	public String printVisit() {
+            String s = "";
+            for(Vertex v:visited) {
+                s += ("-" + v.getId());
+            }
+            return s;
+	}
+
+        /**
+         * checks of Chromosome is a twin or clone
+         * 
+         * @return true if chromosomes are the same and false otherwise
+         */
+        
+	public boolean isTwin(Chromosome c) {
+		ArrayList<Vertex> cVisited = c.getVisited();
+		if(cVisited.size() != visited.size()) {
+			return false;
+		}
+		for(int i = 0; i < visited.size(); i++) {
+			if(cVisited.get(i).getId() != visited.get(i).getId()) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
