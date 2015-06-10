@@ -1,0 +1,155 @@
+package specialproblem;
+
+import java.util.*;
+
+/**
+ * Ant Class for ACO.java
+ * @author Gege
+ */
+public class Ant {
+	ArrayList<Vertex> visited;
+	Vertex current;
+	double distance;
+	double pheromone;
+
+    /**
+     * class constructor
+     *
+     * @param start first visited location
+     */
+    public Ant(Vertex start) {
+		visited = new ArrayList<>();
+		current = start;
+		visited.add(start);
+		distance = 0;
+		pheromone = 0;
+	}
+
+    /**
+     * checks if vertex is already visited
+     * 
+     * @param vCmp  vertex to be checked
+     * @return true if already visited and false if otherwise
+     */
+    public boolean isVisited(Vertex vCmp) {
+		for(Vertex v:visited) {
+			if(v.getId() == vCmp.getId()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+    /**
+     * adds vertex to visited list
+     * 
+     * @param v Vertex to be added
+     */
+    public void addVisited(Vertex v) {
+		if(!v.isDepot()) {
+			distance += current.computeDistance(v);
+		}
+		pheromone += 1;
+		visited.add(v);
+		current = v;
+
+	}
+
+    /**
+     * removes last vertex visited
+     */
+    public void remove() {
+            if(visited.size() == 1) {
+                    return;
+            }
+            Vertex v = visited.get(visited.size()-2);
+            distance -= current.computeDistance(v);
+            visited.remove(visited.size()-1);
+            current = visited.get(visited.size()-1);
+            pheromone -= 1;
+    }
+
+    /**
+     * gets current vertex
+     * 
+     * @return current
+     */
+    public Vertex getCurrent() {
+		return current;
+	}
+
+    /**
+     * gets distance traveled so far
+     * 
+     * @return distance
+     */
+    public double getDistance() {
+	return distance;
+    }
+
+    /**
+     * gets traveling time
+     * 
+     * @return time
+     */
+    public double getTime() {
+		return distance/0.6867;
+	}
+
+    /**
+     * gets list of visited vertices
+     * 
+     * @return visited
+     */
+    public ArrayList<Vertex> getVisited() {
+		return visited;
+	}
+
+    /**
+     * gets pheromone
+     * 
+     * @return pheromone
+     */
+    public double getPheromone() {
+	return pheromone;
+    }
+
+    /**
+     * checks if ant solution is successful
+     * 
+     * @return true if current is depot and false if otherwise
+     */
+    public boolean isSuccessful() {
+        if(current.isDepot()) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * updates pheromone on visited edge
+     * 
+     * @param map map data
+     */
+    public void updatePheromone(Map map) {
+        for(int i = 0; i < visited.size()-1; i++) {
+                int index1 = visited.get((int)i).getId();
+                int index2 = visited.get((int)i+1).getId();
+                map.getVertex(index1).updatePheromone(map.getVertex(index2),pheromone);
+        }
+    }
+
+    /**
+     * gets String of visited vertices
+     * 
+     * @return string
+     */
+    public String getVisitedStr() {
+        String s = "";
+        for(Vertex v:visited) {
+            s += "-" + v.getId();
+
+        }
+        return s;
+    }
+}
