@@ -1,0 +1,233 @@
+package specialproblem;
+import java.util.*;
+
+/**
+ * Tabu Search implementation to the ambulance routing problem with time windows
+ * 
+ * @author Gaezel Dorato
+ */
+
+public class TS {
+    Map map;
+    TabuList tabu;
+    String bestStr;
+    boolean stop;
+    float rate;
+    double bestTime;
+    double distance;
+    double prevTime;
+    int bestCycle;
+    int maxCycle;
+    int depotId;
+    ArrayList<String> routes;
+
+   /**
+    * class constructor
+    * 
+    * @param aMap map data input
+    */
+    TS(Map aMap) {
+            map = aMap;
+            tabu = new TabuList(140);
+            bestStr = "";
+            stop = false;
+            rate = 0;
+            bestTime = 0;
+            distance = 0;
+            prevTime = 0;
+            maxCycle = 1000;
+            depotId = 0;
+            routes = new ArrayList<>();
+    }
+
+    /**
+     * set parameters to default
+     */
+    public void init() {
+            tabu = new TabuList(140);
+            bestStr = "";
+            stop = false;
+            bestTime = 0;
+            depotId = 0;
+    }
+
+    /**
+     * search route for patients
+     * 
+     * @return String output
+     */
+    public String tabuSearch() {
+            final long startTime = System.currentTimeMillis();
+            String output = "";
+            map.initDepots();
+            ArrayList<Patient> customers = map.getPatients();
+            for(int i = 0; i < customers.size(); i++) {
+                init();
+                map.updateTime((customers.get(i).getStartTime() - prevTime)/60000);
+                prevTime = customers.get(i).getStartTime();
+                tabuAlgo(customers.get(i));
+
+                if(bestStr.equals("")) {
+                        output += "\nNo solution found ";
+                        output += map.getPatient(i).checkIn(-1);
+                } else {
+                        output += "\n\nAmbulance Response Time: " + String.format("%.02f", bestTime) + " mins" + "\nDistance: " + String.format("%.02f",distance)+ "km" + "\nBest: " + bestStr ;
+                        output += map.getPatient(i).checkIn(bestTime);
+                       
+                        map.getDepot(depotId).addSched(bestTime + distance/0.6867);
+                        routes.add(bestStr);  
+                }
+            }
+             final long endTime = System.currentTimeMillis();
+             output += "\nTotal execution time: " + (endTime - startTime) + " ms" + " Success rate: " + getRate() + "\nAverage Time: ";
+             return output;
+        }
+    
+   /**
+    * gets success rate of the search for patient transfers
+    * 
+    * @return double success rate
+    */
+    public double getRate() {
+            for(Patient c:map.getPatients()) {
+                    if(c.isSaved()) {
+                        rate++;
+                    }
+            }
+            return rate/map.getPatients().size();
+	}
+        
+   /**
+    * gets best ambulance response time
+    * 
+    * @return double ambulance response time
+    */
+    public double getTsTime() {
+            return bestTime;
+        }
+
+    /**
+     * tabu search algorithm: search initial solution, optimize solution, memorize best
+     * 
+     * @param c Patient customer
+     */
+    public void tabuAlgo(Patient c) {
+            int custId = c.getId();
+            Solution result = new Solution(map.getVertex(custId));
+            for(int i = 1; i <= maxCycle; i++) {
+                    result = search(result,custId);
+                    if(stop) {
+                        break;
+                    } else {
+                        int random = randomNum(result.getVisited().size()-1) + 1;
+                        while(random > 0) {
+                                result.remove();
+                                random--;
+                        }
+                       
+                    }
+            }
+        }
+        
+   /**
+    * gets route solutions
+    * 
+    * @return ArrayList routes found from search
+    */
+    public ArrayList<String> getRoute() {
+            return routes;
+        }
+
+    /**
+     * search for solution: add tabu and check best solution
+     * 
+     * @param currSolution  current Solution
+     * @param patientId     patient Vertex ID
+     * @return Solution     solution found 
+     */
+    public Solution search(Solution currSolution, int patientId) {
+		Vertex prev = currSolution.getCurrent();
+		Vertex walk = prev;
+		String str = currSolution.getVisitedStr();
+		while(!walk.isDepot()) {
+			prev = walk;
+			walk = getNextPath(currSolution,str);
+			if(walk == null) {
+				if(prev.getId() == patientId) {
+					stop = true;
+				}
+				tabu.addTabu(str);
+
+				return currSolution;
+			} else {
+				str += "-" + walk.getId();
+				currSolution.addVisited(walk);
+				if(bestTime > 0 && (currSolution.getTime() > bestTime)) {
+                                    tabu.addTabu(str);
+				}
+			}
+		}
+		tabu.addTabu(str);
+		//temp.isSuccessful(true);
+		if(bestTime == 0 || (currSolution.getTime() + map.getDepot(walk.getId()).getTime()) < bestTime) {
+			bestStr = str;
+			bestTime = currSolution.getTime()+ map.getDepot(walk.getId()).getTime();
+			distance = currSolution.getDistance();
+			depotId = walk.getId();
+		}
+		return currSolution;
+	}
+
+    /**
+     * gets next path to be visited
+     * 
+     * @param currSolution  current solution 
+     * @param str           route
+     * @return Vertex       next path to visit
+     */
+    public Vertex getNextPath(Solution currSolution,String str) {
+		String tempStr = str;
+		Vertex current = currSolution.getCurrent();
+		ArrayList<Edge> edges = current.getEdges();
+		ArrayList<Edge> candidates = new ArrayList<>();
+
+		if(edges.isEmpty()){
+			return null;
+		}
+		double sum = 0;
+		for(int i = 0; i < edges.size(); i++) {
+                    tempStr = str + "-" + edges.get(i).getNext().getId();
+                    current = edges.get(i).getNext();
+                    if(!(tabu.isTabu(tempStr)||currSolution.isVisited(current))) {
+                            candidates.add(edges.get(i));
+                            sum += edges.get(i).getDistance();
+                    }
+		}
+		if(candidates.isEmpty()) {
+			return null;
+		}
+		double pick = Math.random();
+		double interval = 0;
+		for(Edge e:candidates) {
+			interval += e.getDistance()/sum;
+			if(pick <= interval) {
+				return map.getVertex(e.getNext().getId());
+			}
+		}
+		return null;
+	}
+
+    /**
+     * gets random number 0 inclusive to size exclusive
+     * 
+     * @param size range of random number
+     * @return random number
+     */
+    public int randomNum(int size) {
+        if(size == 0) {
+                return 0;
+        }
+        Random random = new Random();
+        return random.nextInt(size);
+    }
+}
