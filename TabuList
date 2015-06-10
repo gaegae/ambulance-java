@@ -1,0 +1,43 @@
+package specialproblem;
+import java.util.*;
+
+/**
+ * list of tabu
+ * @author Gege
+ */
+public class TabuList {
+	int size;
+	ArrayList<String> tabu;
+
+	TabuList(int s){
+		tabu = new ArrayList<>();
+		size = s;
+	}
+
+    /**
+     * checks if string is tabu
+     * 
+     * @param str   String to be checked
+     * @return true if tabu and false if otherwise
+     */
+    public boolean isTabu(String str) {
+		if(tabu.isEmpty()) {
+			return false;
+		}
+		return tabu.stream().anyMatch((s) -> (str.equals(s)));
+	}
+
+    /**
+     * add String to tabu list
+     * 
+     * @param s String to be added
+     */
+    public void addTabu(String s) {
+		tabu.add(s);
+		if(tabu.size() > size) {
+			tabu.remove(0);
+		}
+	}
+
+
+}
