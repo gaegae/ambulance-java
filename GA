@@ -1,0 +1,393 @@
+package specialproblem;
+
+import java.util.*;
+import java.util.Collections;
+
+/** 
+ * GA implementation to the ambulance routing problem with time windows
+ * @author Gaezel Dorato
+ */
+public class GA {
+  Map map;
+  int generation;
+  int children;                           
+  int size;
+  double prevTime;
+  double sum;
+  float rate;
+  Chromosome best;
+  ArrayList<String> routes;
+  ArrayList<Chromosome> POPULATION;
+
+   /**
+    * class constructor
+    * 
+    * @param aMap map data input
+    */
+    GA(Map aMap) {
+    map = aMap;
+    generation = 100;            
+    children = 25;              
+    size = 200;                 
+    prevTime = 0;
+    best = null;
+    routes = new ArrayList<>();
+    POPULATION = new ArrayList<>();
+  }
+
+    /**
+     * search shortest route for patients
+     * 
+     * @return String output
+     */
+    public String gaSearch() {
+        String output = "";
+  	final long startTime = System.currentTimeMillis();
+	int size = map.getPatients().size();
+        map.initDepots();
+	for(int i = 0; i < size; i++) {	
+            Patient person = map.getPatient(i);
+		map.updateTime((person.getStartTime() - prevTime)/60000);
+		prevTime = person.getStartTime();
+	  	gaAlgo(person.getId());
+                
+	  	if(best != null) {
+                    output += "\n\nAmbulance Response Time: " + String.format("%.02f",best.getTime()) + "\nDistance:" + String.format("%.02f",best.getDistance());
+                    output += "\nRoute: " + best.printVisit();
+                    output += map.getPatient(i).checkIn(best.getTime());
+                    map.getDepot(best.getCurrent().getId()).addSched(best.getTime() + best.getDistance()/0.6867);
+                    routes.add(best.printVisit());
+		} else {
+                    output += "\n No solution found";
+                    output += map.getPatient(i).checkIn(-1);
+                }
+                
+  	}
+	final long endTime = System.currentTimeMillis();
+        output += "\nTotal execution time: " + (endTime - startTime) + " ms" + "\nSuccess rate: " + getRate() ;
+	return output;
+  }
+
+    /**
+     * GA algorithm: cycle through generation and check best solution
+     * 
+     * @param patientId patient Vertex ID
+     */
+    public void gaAlgo(int patientId) {
+        best = null;
+        init();
+        initializePop(patientId);
+        for(int i = 0; i < generation; i++) {
+            for(int j = 0; j < children; j++) {    
+              Chromosome mother = roulette();
+              Chromosome father = roulette();
+              mate(mother,father,patientId);
+            }
+            checkBest();       
+        }
+    }
+
+    /**
+     * sets POPULATION to default
+     */
+    public void init(){
+      POPULATION = new ArrayList<>();
+  }
+
+    /**
+     * check and note best chromosome solution
+     */
+    public void checkBest() {
+	sortPopulation();
+	if(POPULATION.size() > 0) {
+            for(Chromosome c:POPULATION){
+                if(c.isSuccessful()){
+                    if(best == null || c.getTime() < best.getTime()) {
+			best = c;
+                    }
+                }
+            }
+	}
+    }
+
+   /**
+    * gets best ambulance response time
+    * 
+    * @return double ambulance response time
+    */
+    public double getGaTime() {
+      if(best == null) {
+          return 100;
+      }
+      return best.getTime();
+    }
+  
+   /**
+    * gets found route solutions
+    * 
+    * @return ArrayList routes found from search
+    */
+    public ArrayList<String> getRoute() {
+      return routes;
+  }
+  
+    /**
+    * gets success rate of the search for patient transfers
+    * 
+    * @return double success rate
+    */
+    public double getRate() {
+        for(Patient c:map.getPatients()) {
+          if(c.isSaved()) {
+              rate++;
+          }
+        }
+        return rate/map.getPatients().size();
+    }
+
+   /**
+    * initializes population
+    * 
+    * @param patientID patient vertex ID
+    */
+    public void initializePop(int patientID) {
+        for(int i = 0; i < size; i++) {
+            addPopulation(search(patientID));
+        }
+    }
+
+   /**
+    * filter if chromosome has a clone before adding to population
+    * @param newChromosome chromosome to be added in the population
+    */
+    public void addPopulation(Chromosome newChromosome) {
+        for(Chromosome c1:POPULATION) {
+                if(c1.isTwin(newChromosome)) {
+                        return;
+                }
+        }
+        POPULATION.add(newChromosome);
+    }
+
+   /**
+    * search for Chromosome solution
+    * 
+    * @param patientID patient Vertex ID
+    * @return Chromosome solution found
+    */
+    public Chromosome search(int patientID) {
+        Vertex walk = map.getVertex(patientID);
+	Chromosome chromosome = new Chromosome(walk);
+
+	while(!walk.isDepot()) {
+            walk = getNextPath(chromosome);
+            if(walk == null) {
+                chromosome.setFitness(0.1);
+                return chromosome;
+            } else {
+                chromosome.addVisited(walk);
+            }
+	}
+	Depot d = map.getDepot(walk.getId());
+	chromosome.addTime(d.getTime());
+	return chromosome;
+    }
+
+   /**
+    * gets next location to visit
+    * 
+    * @param c current chromosome
+    * @return Vertex next path to take
+    */
+    public Vertex getNextPath(Chromosome c) {
+        Vertex current = c.getCurrent();
+        ArrayList<Edge> edges = current.getEdges();
+        if(edges.isEmpty()) {
+                return null;
+        }
+        ArrayList<Vertex> candidates = getCandidates(c,edges);
+        if(candidates.isEmpty()) {
+                return null;
+        }
+        int index = randomNum(candidates.size());
+        return map.getVertex(candidates.get(index).getId());
+    }
+
+   /**
+    * gets and filters Candidates for next path
+    * 
+    * @param c     current Chromosome
+    * @param edges candidates for next path
+    * @return ArrayList vertices candidates for next path visited
+    */
+    public ArrayList<Vertex> getCandidates(Chromosome c, ArrayList<Edge> edges) {
+        ArrayList<Vertex> candidates = new ArrayList<> ();
+        for(Edge e:edges) {
+                Vertex current = e.getNext();
+                if(!c.isVisited(current)) {
+                        candidates.add(e.getNext());
+                }
+        }
+        return candidates;
+    }
+
+   /**
+    * crossover and mutation of mother and father chromosomes
+    * 
+    * @param mother    Chromosome
+    * @param father    Chromosome
+    * @param patientID patient Vertex ID 
+    */
+    public void mate(Chromosome mother, Chromosome father,int patientID) {
+        double probability = Math.random();
+        Chromosome c = null;
+        if(mother == null || father == null) {
+           c = search(patientID);
+        } else {
+          if(probability <= 0.65) {
+            c = crossover(mother, father);
+          }
+          if(c != null) {
+              Chromosome child = c;
+
+            for(int i = 1; i < child.getVisited().size();){
+                child.remove();
+                probability = Math.random();
+                    if (probability <= 0.03) {
+                        c = mutate(child);
+                        i = child.getVisited().size();
+                    }
+                }
+            }
+        }
+        if(c != null) {
+          sortPopulation();
+          POPULATION.remove(POPULATION.size()-1);
+          addPopulation(c);
+        }
+    } 
+
+    /**
+     * mutate a particular chromosome
+     * 
+     * @param child Chromosome
+     * @return Chromosome mutated solution
+     */
+      public Chromosome mutate(Chromosome child) {
+        Vertex current = child.getCurrent();
+        while(!current.isDepot()) {
+                current = getNextPath(child);
+                if(current == null) {
+                  return child;
+                }
+                child.addVisited(current);
+        }
+        Depot d = map.getDepot(current.getId());
+        child.addTime(d.getTime());
+        return child;
+    }
+      
+    /**
+     * alternating edges crossover
+     *  
+     * @param mother        Chromosome
+     * @param father        Chromosome
+     * @return Chromosome   child from crossover
+     */
+      public Chromosome crossover(Chromosome mother, Chromosome father) {
+  	ArrayList<Vertex> genePool = mother.getVisited();
+  	Chromosome child = new Chromosome(genePool.get(0));
+  	int flag = 0;
+  	int motherIndex = 0;
+  	int fatherIndex = 0;
+  	int geneIndex = 0;
+	boolean motherGene = true;
+	
+	while(!child.getCurrent().isDepot()) {
+            if(flag == 2) {
+                child.setFitness(0.1);
+                return child;
+            }
+            if(motherGene) {
+                genePool = father.getVisited();
+                geneIndex = fatherIndex;
+                motherGene = false;
+            } else {
+                genePool = mother.getVisited();
+                geneIndex = motherIndex;
+                motherGene = true;
+            }
+            boolean add = false;
+            for(int i = geneIndex; i < genePool.size()-2; i++) {     
+              if(genePool.get(i).getId() == child.getCurrent().getId()) {
+                child.addVisited(genePool.get(i+1));
+                add = true;
+                if(motherGene) {
+                    motherIndex = i+1;
+                } else {
+                    fatherIndex = i+1;
+                }	
+               }
+            }
+            if(!add) {
+                flag++;
+            }
+	}
+        if(child.isSuccessful()) {
+            Depot d = map.getDepot(child.getCurrent().getId());
+            child.addTime(d.getTime()); 
+        } else {
+            child.setFitness(0.1);
+        }
+        return child;
+    }
+
+    /**
+     * sort chromosomes in population
+     */
+    public void sortPopulation() {
+        Collections.sort(POPULATION,new FitnessComparator());
+    }
+
+    /**
+     * roulette wheel selection
+     * 
+     * @return Chromosome chosen chromosome
+     */
+    public Chromosome roulette() {
+        calculateSum();
+        double intervals = 0;
+        Chromosome chromosome = null;
+        double pick = Math.random();
+        for (Chromosome POPULATION1 : POPULATION) {
+            intervals += (POPULATION1.getFitness() / sum);
+            if (pick <= intervals) {
+                chromosome = POPULATION1;
+                return chromosome;
+            }
+        }
+        return null; 
+    } 
+
+   /**
+    * calculate sum of all fitness in population
+    */
+    public void calculateSum() {
+            sum = 0;
+            for(Chromosome c:POPULATION) {
+                    sum += c.getFitness();
+            }
+    }
+
+   
+   /**
+    * gets random number 0 inclusive to size exclusive
+    * 
+    * @param size   range of random number
+    * @return random number chosen
+    */
+    public int randomNum(int size) {
+        Random random = new Random();
+        return random.nextInt(size);
+    }
+}
