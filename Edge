@@ -1,0 +1,66 @@
+package specialproblem;
+
+/**
+ * Edge Class
+ * @author Gege
+ */
+public class Edge {
+    private final Vertex next;
+    private double pheromone;
+    private double distance;
+
+    /**
+     * Class constructor
+     * 
+     * @param aNext Vertex at one edge point
+     * @param dist  edge distance
+     */
+    public Edge(Vertex aNext, double dist) {
+		next = aNext;
+		pheromone = Math.random()+ 1;
+		distance = dist;
+	}
+
+    /**
+     * gets vertex next
+     * 
+     * @return next
+     */
+    public Vertex getNext() {
+		return next;
+	}
+
+    /**
+     * gets edge distance
+     * 
+     * @return distance
+     */
+    public double getDistance() {
+		return distance;
+	}
+
+    /**
+     * get pheromone on edge
+     * 
+     * @return pheromone
+     */
+    public double getPheromone() {
+		return pheromone;
+	}
+
+    /**
+     * resets pheromone on edge
+     */
+    public void resetPheromone() {
+		pheromone = Math.random()+ 1;
+	}
+
+    /**
+     * updates pheromone on edge
+     * 
+     * @param antPhero total pheromone of ant
+     */
+    public void updatePheromone(double antPhero) {
+		pheromone =  (0.9 * pheromone) + antPhero;
+    }
+}
