@@ -1,0 +1,198 @@
+package specialproblem;
+
+import java.util.*;
+
+/**
+ * Vertex Class
+ * @author Gaezel Dorato
+ */
+public class Vertex {
+    private int id;
+    private double latitude;
+    private double longitude;
+    private boolean isDepot;
+    private ArrayList<Edge> edges;
+    
+    /**
+     * Class Constructor
+     * 
+     * @param anId          vertex ID
+     * @param aLatitude     latitude  value
+     * @param aLongitude    longitude value
+     */
+    public Vertex(int anId, double aLatitude, double aLongitude) {
+        id = anId;
+        latitude = aLatitude;
+        longitude = aLongitude;
+        isDepot = false;
+        edges = new ArrayList<> ();
+    }
+
+    /**
+     * gets id
+     * 
+     * @return id
+     */
+    public int getId() {
+	return id;
+    }
+
+    /**
+     * gets latitude
+     * 
+     * @return latitude
+     */
+    public double getLatitude() {
+		return latitude;
+	}
+
+    /**
+     * gets longitude
+     * 
+     * @return longitude
+     */
+    public double getLongitude() {
+		return longitude;
+	}
+        
+    /**
+     * gets coordinates javascript
+     * 
+     * @return String 
+     */
+    public String getCoordinates() {
+            return ("new google.maps.LatLng(" + latitude + "," + longitude + ")");
+        }
+
+    /**
+     * gets distance between locationA and locationB
+     * 
+     * @param next  vertex location B
+     * @return distance 
+     */
+    public double getDistance(Vertex next) {
+		return getEdgeId(next.getId()).getDistance();
+	}
+
+    /**
+     * gets list of edges
+     * 
+     * @return edges
+     */
+    public ArrayList<Edge> getEdges() {
+		return edges;
+	}
+
+    /**
+     * gets Edge with next Vertex ID
+     * 
+     * @param id    next Vertex ID
+     * @return edge if existing and null if otherwise
+     */
+    public Edge getEdgeId(int id) {
+        for(Edge e:edges) {
+                if(id == e.getNext().getId()) {
+                        return e;
+                }
+        }
+        return null;
+    }
+
+    /**
+     * add edge to vertex
+     * 
+     * @param map           map data
+     * @param vertexId      vertex to add edge
+     */
+    public void addEdge(Map map, int vertexId) {
+            Vertex next = map.getVertex(vertexId);
+            double dist = computeDistance(next);
+            Edge edge = new Edge(next,dist);
+            edges.add(edge);
+    }
+
+    /**
+     * sets isDepot value to true or false
+     * @param aBool set value
+     */
+    public void isDepot(boolean aBool) {
+		isDepot = aBool;
+	}
+
+    /**
+     * checks if Vertex is a depot
+     * 
+     * @return true if a depot and false if otherwise
+     */
+    public boolean isDepot() {
+	return isDepot;
+    }
+
+    /**
+     * updates pheromone
+     * 
+     * @param next      Vertex on the other end point of edge
+     * @param antPhero  ant current pheromone 
+     */
+    public void updatePheromone(Vertex next, double antPhero) {
+        edges.stream().filter((e) -> (e.getNext().getId() == next.getId())).forEach((e) -> {
+            e.updatePheromone(antPhero);
+        });
+    }
+
+    /**
+     * resets pheromones
+     */
+    public void resetPheromone() {
+        edges.stream().forEach((e) -> {
+            e.resetPheromone();
+        });
+    }
+
+    /**
+     * calculates the distance between two locations (given the latitude/longitude of those points).
+     * It is being used to calculate the distance between two locations in km
+     * @author GeoDataSource.com, http://www.geodatasource.com/developers/javascript
+     * @param location
+     * @return double distance from location A to location B
+     */
+
+     public double computeDistance(Vertex location) {
+      double lat1 = location.getLatitude();
+      double lat2 = this.getLatitude();
+
+      double lon1 = location.getLongitude();
+      double lon2 = this.getLongitude();
+
+      double theta = lon1 - lon2;
+      double dist = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta));
+      dist = Math.acos(dist);
+      dist = rad2deg(dist);
+      dist = dist * 60 * 1.1515;
+      dist = dist * 1.609344;
+
+      return (dist);
+    }
+
+    public double calcDistance(double lat2, double lon2) {
+      double lat1 = this.getLatitude();
+      double lon1 = this.getLongitude();
+
+      double theta = lon1 - lon2;
+      double dist = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta));
+      dist = Math.acos(dist);
+      dist = rad2deg(dist);
+      dist = dist * 60 * 1.1515;
+      dist = dist * 1.609344;
+
+      return (dist);
+    }
+
+    private double deg2rad(double deg) {
+            return (deg * Math.PI / 180.0);
+    }
+
+    private double rad2deg(double rad) {
+            return (rad * 180 / Math.PI);
+    }
+}
