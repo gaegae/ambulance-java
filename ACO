@@ -1,0 +1,333 @@
+package specialproblem;
+import java.util.*;
+
+/**
+ * ACO implementation to the ambulance routing problem with time windows
+ * @author Gaezel Dorato
+ */
+
+public class ACO {
+    Map map;
+    Ant BEST;
+    float rate;
+    double alpha;
+    double beta;
+    double prevTime;
+    double responseTime;
+    int maxCycle;
+    int colonySize;
+    int bestCycle;
+    ArrayList<String> routes;
+    ArrayList<Integer> habitat;
+
+   /**
+    * class constructor
+    *
+    * @param aMap map data input
+    */
+    public ACO(Map aMap) {
+        map = aMap;
+        BEST = null;
+        rate = 0;
+        alpha = 1.0;
+        beta = 5.0;
+        prevTime = 0;
+        responseTime = 0;
+        maxCycle = 10; 
+        colonySize = 140; 
+        bestCycle = 0;
+        routes = new ArrayList<>();
+        habitat = new ArrayList<>();
+    }
+
+    /**
+     * search route for patients
+     * 
+     * @return String output
+     */
+    public String acoSearch() {
+        final long startTime = System.currentTimeMillis();
+        String output = "";
+
+        ArrayList<Patient> patients = map.getPatients();
+        for(int i = 0; i < patients.size(); i++) {
+            map.updateTime((patients.get(i).getStartTime() - prevTime)/60000);
+            prevTime = patients.get(i).getStartTime();
+            output += acoAlgo(patients.get(i).getId(),i);
+        }
+
+         final long endTime = System.currentTimeMillis();
+         output += "\nTotal execution time: " + (endTime - startTime) + " ms" + "\nSuccess rate: " + getRate();
+
+         return output;
+    }
+
+   /**
+    * add vertex id to ant habitat
+    * @param id Vertex ID 
+    */
+    public void addHabitat(int id) {
+        for(Integer i:habitat) {
+            if(i == id) {
+                return;
+            }
+        }
+        habitat.add(id);
+    }
+
+    /**
+     * reset pheromones and habitat
+     */
+    public void init() {
+            map.resetPheromone(habitat);
+            habitat = new ArrayList<> ();
+    }
+
+    /**
+     * ACO algorithm and output results
+     * 
+     * @param patientId patient Vertex ID
+     * @param index     patient index
+     * @return String   output
+     */
+    public String acoAlgo(int patientId, int index) {
+        BEST = null;
+        String output = "";
+        initial(patientId);
+            for(int i = 1; i <= maxCycle; i++) {
+            init();
+                for(int j = 1; j <= colonySize; j++) {
+                        antSearch(patientId);
+                }
+            }
+            if(BEST == null) {
+                output += "No solutions found";
+                output += map.getPatient(index).checkIn(-1);
+            } else {
+                output += "\n\nAmbulance Response Time: " + String.format("%.02f",responseTime) + " mins" + "\nDistance: " + String.format("%.02f",BEST.getDistance());
+                output += map.getPatient(index).checkIn(BEST.getTime());  
+                output += "\nRoute: " + BEST.getVisitedStr();
+                output += map.getPatient(index).checkIn(responseTime);
+
+                map.getDepot(BEST.getCurrent().getId()).addSched(BEST.getTime() + responseTime);
+                routes.add(BEST.getVisitedStr());
+
+            }
+
+        return output;
+    }
+
+   /**
+    * random walk by ant from  every depot and update pheromone
+    * 
+    * @param patientId patient vertex ID
+    */
+    public void initial(int patientId) {
+        ArrayList<Depot> depots = map.getDepots();
+        for (Depot depot : depots) {
+            int id = depot.getId();
+            Ant ant = new Ant(map.getVertex(patientId));
+            ant = randomWalk(ant,id);
+            ant.updatePheromone(map);
+        }
+    }
+
+   /**
+    * random Ant walk to depot
+    * 
+    * @param ant       ant agent
+    * @param depotId   depot Vertex ID
+    * @return ant 
+    */
+    public Ant randomWalk(Ant ant,int depotId) {
+        Vertex walk = ant.getCurrent();
+        while(walk == null||walk.getId() != depotId) {
+                walk = getNextPath(ant);
+                if(walk == null) {
+                        return ant;
+                } else {
+                        addHabitat(walk.getId());
+                        ant.addVisited(walk);
+                }
+        }
+        return ant;
+    }
+
+   /**
+    * ant search with pheromone updates
+    * 
+    * @param patientId     patient Vertex ID
+    */
+    public void antSearch(int patientId) {
+        Ant ant = new Ant(map.getVertex((int)patientId));
+        ant = search(ant, patientId);
+    }
+
+   /**
+    * search solution, check best solution
+    * 
+    * @param ant           Ant agent 
+    * @param patientId     patient Vertex ID
+    * @return ant
+    */
+    public Ant search(Ant ant, int patientId) {
+        Vertex prev = ant.getCurrent();
+        Vertex walk = ant.getCurrent();
+
+        while(!walk.isDepot()) {
+            walk = getNextPath(ant);
+            if(walk == null) {
+                if(prev.getId() == patientId) {
+                        return ant;
+                }
+                ant.remove();
+            } else {
+                addHabitat(walk.getId());
+                ant.addVisited(walk);
+            }
+        }
+        ant.updatePheromone(map);
+
+        Depot d = map.getDepot(ant.getCurrent().getId());
+        double response = ant.getTime() + d.getTime();
+        if(BEST == null ||  response < responseTime) {
+            BEST = ant;
+            responseTime = response;
+        }
+
+        return ant;
+    }
+
+   /**
+    * get next path to visit by ant and leave pheromone on edge (step by step pheromone)
+    * 
+    * @param ant       Ant agent
+    * @return Vertex   next path to visit
+    */
+    public Vertex getNextPath(Ant ant) {
+        Vertex current = ant.getCurrent();
+
+        ArrayList<Edge> candidates = getCandidates(ant);
+        if(candidates.isEmpty()){
+                return null;
+        }
+        int index = rouletteWheel(ant,candidates);
+        Edge e = candidates.get(index);
+
+        map.getVertex(current.getId()).getEdgeId(e.getNext().getId()).updatePheromone(ant.getPheromone());
+        return map.getVertex(e.getNext().getId());
+    }
+
+   /**
+    * roulette wheel selection
+    * 
+    * @param ant           Ant agent
+    * @param candidates    ArrayList of edges candidate
+    * @return int          random index number
+    */
+    public int rouletteWheel(Ant ant, ArrayList<Edge> candidates) {
+        double sumP = 0;
+        double interval = 0;
+
+        if(candidates.size() == 1) {
+                return 0;
+        }
+
+        for(Edge e:candidates) {
+            sumP += getAttractiveness(ant,e);
+        }
+
+        double pick =(Math.random()); // q = 0.2
+        if(pick < 0.2) {
+                pick = 0.2;
+        }
+        for(int i = 0; i < candidates.size(); i++) {
+                interval += getAttractiveness(ant,candidates.get(i))/sumP;
+                if(pick <= interval) {
+                        return i;
+                }
+        }
+        return 0;
+    }
+
+   /**
+    * filter visited edges and return candidate edges
+    * 
+    * @param ant           Ant agent
+    * @return ArrayList    list of edges candidates
+    */
+    public ArrayList<Edge> getCandidates(Ant ant) {
+        Vertex current = ant.getCurrent();
+        ArrayList<Edge> edges = current.getEdges();
+        ArrayList<Edge> candidates = new ArrayList<>();
+
+        for(Edge e:edges) {
+            if(!ant.isVisited(e.getNext())) {
+                    candidates.add(e);
+            }
+        }
+        return candidates;
+    }
+
+   /**
+    * gets random number 0 inclusive and size exclusive
+    * 
+    * @param size   range of random number
+    * @return random number
+    */
+    public int randomNum(int size) {
+        Random random = new Random();
+        return random.nextInt(size);
+    }
+
+   /**
+    * compute attractiveness pheromone/distance
+    * 
+    * @param ant        Ant agent
+    * @param edge       edge
+    * @return double    attractiveness    
+    */
+    public double getAttractiveness(Ant ant, Edge edge) {
+        if(ant.isVisited(edge.getNext())) {
+                return 0;
+        }
+        double T = edge.getPheromone();
+        double N = 0.01/edge.getDistance();
+
+        double result = Math.pow(N,alpha)/ Math.pow(T,beta);
+        return result;
+    }
+
+   /**
+    * gets ACO best ambulance response time
+    * 
+    * @return double ambulance response time
+    */
+    public double getAcoTime() {
+        return responseTime;
+    }
+         
+   /**
+    * gets route solution
+    * 
+    * @return ArrayList route solutions
+    */
+    public ArrayList<String> getRoute() {
+        return routes;
+    }
+        
+    /**
+    * gets success rate of the search for patient transfers
+    * 
+    * @return double success rate
+    */
+    public double getRate() {
+        for(Patient p:map.getPatients()) {
+            if(p.isSaved()) {
+                rate++;
+            }
+        }
+        return rate/map.getPatients().size();
+    }      
+    
+}
