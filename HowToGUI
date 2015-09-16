@@ -7,7 +7,7 @@ package specialproblem;
 
 /**
  *
- * @author Gege
+ * @author Gaezel Dorato
  */
 public class HowToGUI extends javax.swing.JFrame {
 
