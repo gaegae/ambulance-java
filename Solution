@@ -4,7 +4,8 @@ import java.util.*;
 
 /**
  * Solution Class used in TS.java
- * 
+ * adds and removes vertex location to solution route, get route info and checks if solution route is successful
+ *
  * @author Gaezel Dorato
  */
 public class Solution {
@@ -18,7 +19,19 @@ public class Solution {
             visited.add(start);
             current = start;
 	}
-
+	
+    /**
+     * checks if solution is successful
+     * 
+     * @return true if current is depot and false if otherwise
+     */
+    public boolean isSuccessful() {
+             if(current.isDepot()) {
+                return true;
+            }
+            return false;
+	}
+	
     /**
      * gets visited vertices
      * 
@@ -26,7 +39,7 @@ public class Solution {
      */
     public ArrayList<Vertex> getVisited() {
 		return visited;
-	}
+        }
 
     /**
      * gets distance of solution
@@ -82,18 +95,6 @@ public class Solution {
         visited.remove(visited.size()-1);
         current = visited.get(visited.size()-1);
     }
-
-    /**
-     * checks if solution is successful
-     * 
-     * @return true if current is depot and false if otherwise
-     */
-    public boolean isSuccessful() {
-             if(current.isDepot()) {
-                return true;
-            }
-            return false;
-	}
 
     /**
      * checks if vertex is already visited
