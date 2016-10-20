@@ -6,4 +6,6 @@ Data is in txt files Vertices.txt (id,latitude,longitude) and Edges.txt (id:conn
 
 html + javascript - map.html
 
+Main Class is SpecialProblemUI.java
+
 
