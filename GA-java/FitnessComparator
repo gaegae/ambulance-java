@@ -2,7 +2,7 @@ package specialproblem;
 import java.util.Comparator;
 
 /**
- * sorts Chromosome from highest to lowest fitness
+ * sorts Chromosome from highest to lowest fitness, used by GA.java
  * @author Gaezel Dorato
  */
 public class FitnessComparator implements Comparator<Chromosome> {
